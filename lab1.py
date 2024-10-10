@@ -40,5 +40,11 @@ for product in products:
     else:
         price = "Price not found"
 
-    if name != "Name not found" and price != "Price not found" and price !="Price not available":
-        print(f"Name: {name}, Price: {price}")
+    # Get product link
+    if title_div:
+        link = title_div.find('a')['href']
+    else:
+        link = "Link not found"
+
+    if name != "Name not found" and price != "Price not found" and price != "Price not available" and link != "Link not found":
+        print(f"Name: {name}, Price: {price}, Link: {link}")
