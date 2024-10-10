@@ -40,6 +40,26 @@ for product in products:
     else:
         price = "Price not found"
 
+    # Get product size
+    size_div = product.find('div', class_='sizes')
+    if size_div and size_div.find('span'):
+        size = size_div.find('span').text.strip()
+    else:
+        size = "Size not available"
+
+    # Get product color (if available)
+    color_div = product.find('div', class_='colors')
+    if color_div:
+        color = color_div.find('span')['data-product-id']  # Adjust based on actual attribute
+    else:
+        color = "Color not available"
+
+    # # Get product brand (from a data attribute)
+    # brand = product.get('data-brand', 'Brand not available')
+    #
+    # # Get product category
+    # category = product.get('data-category-4', 'Category not available')
+
     # Get product link
     if title_div:
         link = title_div.find('a')['href']
@@ -47,4 +67,4 @@ for product in products:
         link = "Link not found"
 
     if name != "Name not found" and price != "Price not found" and price != "Price not available" and link != "Link not found":
-        print(f"Name: {name}, Price: {price}, Link: {link}")
+        print(f"Name: {name:<52}, Price: {price:<11}, Size: {size:<4}, Color: {color:<5}, Link: {link}")
