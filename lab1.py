@@ -173,5 +173,53 @@ product_summary = {
     "timestamp_utc": utc_timestamp
 }
 
-# Print the summary
-print(f"Product Summary:\n{product_summary}")
+# Serialization to JSON
+def serialize_to_json(summary):
+    json_str = "{"
+    json_str += f'"filtered_products": ['
+    for index, product in enumerate(summary["filtered_products"]):
+        json_str += "{"
+        json_str += f'"name": "{product["name"]}", '
+        json_str += f'"price": {product["price"]}, '
+        json_str += f'"size": "{product["size"]}", '
+        json_str += f'"color": "{product["color"]}", '
+        json_str += f'"origin_country": "{product["origin_country"]}", '
+        json_str += f'"link": "{product["link"]}"'
+        json_str += "}"
+        if index < len(summary["filtered_products"]) - 1:
+            json_str += ", "
+    json_str += "], "
+    json_str += f'"total_price": {summary["total_price"]}, '
+    json_str += f'"timestamp_utc": "{summary["timestamp_utc"]}"'
+    json_str += "}"
+    return json_str
+
+# Serialization to XML
+def serialize_to_xml(summary):
+    xml_str = "<product_summary>\n"
+    xml_str += "  <filtered_products>\n"
+    for product in summary["filtered_products"]:
+        xml_str += "    <product>\n"
+        xml_str += f'      <name>{product["name"]}</name>\n'
+        xml_str += f'      <price>{product["price"]}</price>\n'
+        xml_str += f'      <size>{product["size"]}</size>\n'
+        xml_str += f'      <color>{product["color"]}</color>\n'
+        xml_str += f'      <origin_country>{product["origin_country"]}</origin_country>\n'
+        xml_str += f'      <link>{product["link"]}</link>\n'
+        xml_str += "    </product>\n"
+    xml_str += "  </filtered_products>\n"
+    xml_str += f'  <total_price>{summary["total_price"]}</total_price>\n'
+    xml_str += f'  <timestamp_utc>{summary["timestamp_utc"]}</timestamp_utc>\n'
+    xml_str += "</product_summary>"
+    return xml_str
+
+# Serialize the product summary
+json_output = serialize_to_json(product_summary)
+xml_output = serialize_to_xml(product_summary)
+
+# Print serialized outputs
+print("\nJSON Output:")
+print(json_output)
+
+print("\nXML Output:")
+print(xml_output)
