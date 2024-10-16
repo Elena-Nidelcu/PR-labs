@@ -4,6 +4,14 @@ from bs4 import BeautifulSoup
 # Conversion rate from LEI to EUR (example rate: 1 LEI = 0.05 EUR)
 LEI_TO_EUR_RATE = 0.05
 
+# Define the desired price range (in EUR)
+MIN_PRICE = 30.0
+MAX_PRICE = 100.0
+
+# Function to filter products based on price range
+def is_in_price_range(product):
+    return MIN_PRICE <= product['price'] <= MAX_PRICE
+
 url = 'https://sportlandia.md/femei/incaltaminte-pentru-femei/ghete-femei'
 
 response = requests.get(url)
@@ -73,3 +81,11 @@ items_in_eur = list(map(convert_to_eur, items))
 # Print the products with price in EUR
 for item in items_in_eur:
     print(f"Name: {item['name']:<52}, Price (EUR): {item['price']:<6}, Size: {item['size']:<4}, Color: {item['color']:<5}, Origin Country: {item['origin_country']:<15}, Link: {item['link']}")
+
+# Use filter to get the products within the price range
+filtered_items = list(filter(is_in_price_range, items_in_eur))
+
+# Print the filtered products
+print(f"Products within price range {MIN_PRICE} EUR to {MAX_PRICE} EUR:")
+for item in filtered_items:
+    print(f"Name: {item['name']:<52}, Price (EUR): {item['price']:<6}")
