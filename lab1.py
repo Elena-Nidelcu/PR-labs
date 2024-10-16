@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from functools import reduce
+from datetime import datetime
 
 # Conversion rate from LEI to EUR (example rate: 1 LEI = 0.05 EUR)
 LEI_TO_EUR_RATE = 0.05
@@ -93,6 +94,20 @@ for item in filtered_items:
 
 # Use reduce to sum up the prices of the filtered products
 total_price = reduce(lambda acc, product: acc + product['price'], filtered_items, 0)
+total_price = round(total_price, 2)
 
 # Print the total price of the filtered products
 print(f"Total price of filtered products: {total_price:.2f} EUR")
+
+# Get the current UTC timestamp
+utc_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
+# Create a new data structure that holds the filtered products, total price, and UTC timestamp
+product_summary = {
+    "filtered_products": filtered_items,
+    "total_price": total_price,
+    "timestamp_utc": utc_timestamp
+}
+
+# Print the summary
+print(f"Product Summary:\n{product_summary}")
