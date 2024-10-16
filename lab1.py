@@ -34,12 +34,35 @@ for product in products:
     except ValueError:
         continue  # Skip this product if the price is invalid
 
+    # Check for valid product fields
     if name != "Name not found" and price != "Price not found" and price != "Price not available" and link != "Link not found":
         print(f"Name: {name:<52}, Price: {price:<6}, Size: {size:<4}, Color: {color:<5}, Link: {link}")
-        items.append({
-            "name": name,
-            "price": price,
-            "size": size,
-            "color": color,
-            "link": link
-        })
+
+        # Now scrape the individual product page to get the origin country
+        product_url = link
+        product_response = requests.get(product_url)
+        if product_response.status_code == 200:
+            product_soup = BeautifulSoup(product_response.text, 'html.parser')
+
+            # Look for the 'Tara de origine' row in the table
+            origin_country = "Country not available"
+            table_rows = product_soup.find_all('tr', class_='param')
+            for row in table_rows:
+                name_td = row.find('td', class_='name')
+                value_td = row.find('td', class_='value')
+                if name_td and value_td and 'Tara de origine' in name_td.text:
+                    origin_country = value_td.text.strip()
+                    break
+
+            print(f"Origin Country: {origin_country}")
+
+            items.append({
+                "name": name,
+                "price": price,
+                "size": size,
+                "color": color,
+                "link": link,
+                "origin_country": origin_country  # Include origin country in the scraped data
+            })
+
+# Optional: You can then save `items` to a file or continue processing it further
