@@ -1,6 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 
+# Conversion rate from LEI to EUR (example rate: 1 LEI = 0.05 EUR)
+LEI_TO_EUR_RATE = 0.05
+
 url = 'https://sportlandia.md/femei/incaltaminte-pentru-femei/ghete-femei'
 
 response = requests.get(url)
@@ -34,35 +37,39 @@ for product in products:
     except ValueError:
         continue  # Skip this product if the price is invalid
 
-    # Check for valid product fields
-    if name != "Name not found" and price != "Price not found" and price != "Price not available" and link != "Link not found":
-        print(f"Name: {name:<52}, Price: {price:<6}, Size: {size:<4}, Color: {color:<5}, Link: {link}")
+    # Now scrape the individual product page to get the origin country
+    product_url = link
+    product_response = requests.get(product_url)
+    if product_response.status_code == 200:
+        product_soup = BeautifulSoup(product_response.text, 'html.parser')
 
-        # Now scrape the individual product page to get the origin country
-        product_url = link
-        product_response = requests.get(product_url)
-        if product_response.status_code == 200:
-            product_soup = BeautifulSoup(product_response.text, 'html.parser')
+        # Look for the 'Tara de origine' row in the table
+        origin_country = "Country not available"
+        table_rows = product_soup.find_all('tr', class_='param')
+        for row in table_rows:
+            name_td = row.find('td', class_='name')
+            value_td = row.find('td', class_='value')
+            if name_td and value_td and 'Tara de origine' in name_td.text:
+                origin_country = value_td.text.strip()
+                break
 
-            # Look for the 'Tara de origine' row in the table
-            origin_country = "Country not available"
-            table_rows = product_soup.find_all('tr', class_='param')
-            for row in table_rows:
-                name_td = row.find('td', class_='name')
-                value_td = row.find('td', class_='value')
-                if name_td and value_td and 'Tara de origine' in name_td.text:
-                    origin_country = value_td.text.strip()
-                    break
+        items.append({
+            "name": name,
+            "price": price,  # Keep price in LEI for now
+            "size": size,
+            "color": color,
+            "link": link,
+            "origin_country": origin_country
+        })
 
-            print(f"Origin Country: {origin_country}")
+# Function to convert LEI price to EUR
+def convert_to_eur(product):
+    product['price'] = round(product['price'] * LEI_TO_EUR_RATE, 2)  # Convert LEI to EUR and round to 2 decimal places
+    return product
 
-            items.append({
-                "name": name,
-                "price": price,
-                "size": size,
-                "color": color,
-                "link": link,
-                "origin_country": origin_country  # Include origin country in the scraped data
-            })
+# Use map to apply the conversion to all products
+items_in_eur = list(map(convert_to_eur, items))
 
-# Optional: You can then save `items` to a file or continue processing it further
+# Print the products with price in EUR
+for item in items_in_eur:
+    print(f"Name: {item['name']:<52}, Price (EUR): {item['price']:<6}, Size: {item['size']:<4}, Color: {item['color']:<5}, Origin Country: {item['origin_country']:<15}, Link: {item['link']}")
