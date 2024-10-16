@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from functools import reduce
 
 # Conversion rate from LEI to EUR (example rate: 1 LEI = 0.05 EUR)
 LEI_TO_EUR_RATE = 0.05
@@ -89,3 +90,9 @@ filtered_items = list(filter(is_in_price_range, items_in_eur))
 print(f"Products within price range {MIN_PRICE} EUR to {MAX_PRICE} EUR:")
 for item in filtered_items:
     print(f"Name: {item['name']:<52}, Price (EUR): {item['price']:<6}")
+
+# Use reduce to sum up the prices of the filtered products
+total_price = reduce(lambda acc, product: acc + product['price'], filtered_items, 0)
+
+# Print the total price of the filtered products
+print(f"Total price of filtered products: {total_price:.2f} EUR")
