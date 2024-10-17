@@ -225,36 +225,86 @@ print(json_output)
 print("\nXML Output:")
 print(xml_output)
 
-# Replace custom serialization/deserialization with JSON-based methods
+import re
+
 def custom_serialize(obj):
-    try:
-        return json.dumps(obj)
-    except TypeError as e:
-        raise ValueError(f"Cannot serialize: {obj}. Error: {e}")
+    """
+    Serializes an object (list, dictionary, string, integer, etc.) into the custom string format.
+    """
+    if isinstance(obj, dict):
+        serialized_items = []
+        for key, value in obj.items():
+            key_serialized = f'str({custom_serialize(key)})'
+            value_serialized = custom_serialize(value)
+            serialized_items.append(f'"{key_serialized}>{value_serialized}"')
+        return ' & '.join(serialized_items)
 
-# Custom Pretty Serialization Function
-def pretty_serialize(obj):
-    try:
-        # Create a JSON string with indentation and sorted keys
-        pretty_json = json.dumps(obj, indent=4, sort_keys=True)
-        return pretty_json
-    except TypeError as e:
-        raise ValueError(f"Cannot serialize object for pretty print: {obj}. Error: {e}")
+    elif isinstance(obj, list):
+        serialized_items = [custom_serialize(item) for item in obj]
+        return '[' + ' & '.join(serialized_items) + ']'
+
+    elif isinstance(obj, str):
+        return f'str({obj})'
+
+    elif isinstance(obj, int):
+        return f'int({obj})'
+
+    elif isinstance(obj, float):
+        return f'float({obj})'
+
+    else:
+        raise TypeError(f"Unsupported type: {type(obj)}")
 
 
-def custom_deserialize(data):
-    try:
-        return json.loads(data)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Cannot deserialize: {data}. Error: {e}")
+def custom_deserialize(serialized_str):
+    """
+    Deserializes a custom formatted string back into its original object (list, dictionary, etc.).
+    """
+    # Remove enclosing brackets for lists and split by separators
+    def deserialize_list(serialized):
+        # Remove square brackets and split by ' & '
+        list_content = serialized[1:-1]
+        items = re.split(r'(?<!\]),\s*', list_content)
+        return [custom_deserialize(item) for item in items]
+
+    # Split and deserialize a dictionary
+    def deserialize_dict(serialized):
+        items = serialized.split(' & ')
+        deserialized_dict = {}
+        for item in items:
+            # Split key-value pair at '>'
+            key, value = re.match(r'"str\((.*?)\)>(.*)"', item).groups()
+            deserialized_dict[key] = custom_deserialize(value)
+        return deserialized_dict
+
+    # Match and return the right type
+    if serialized_str.startswith('['):
+        # It's a list
+        return deserialize_list(serialized_str)
+
+    elif serialized_str.startswith('"') and '>' in serialized_str:
+        # It's a dictionary
+        return deserialize_dict(serialized_str)
+
+    elif serialized_str.startswith('str('):
+        # It's a string
+        return serialized_str[4:-1]  # Remove the 'str(' prefix and closing ')'
+
+    elif serialized_str.startswith('int('):
+        # It's an integer
+        return int(serialized_str[4:-1])
+
+    elif serialized_str.startswith('float('):
+        # It's a float
+        return float(serialized_str[6:-1])
+
+    else:
+        raise ValueError(f"Unrecognized format: {serialized_str}")
 
 # Serialize the product summary
-serialized_data = custom_serialize(product_summary)
+serialized_data = custom_serialize(items_in_eur)
 print("Serialized Data:")
-# print(serialized_data)
-
-serialized_data2 = pretty_serialize(product_summary)
-print(serialized_data2)
+print(serialized_data)
 
 # Deserialize the data back to the original structure
 deserialized_data = custom_deserialize(serialized_data)
