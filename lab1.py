@@ -3,6 +3,7 @@ import ssl
 from bs4 import BeautifulSoup
 from datetime import datetime
 from functools import reduce
+import json
 
 # Define the HTTPS URL and host details
 host = 'sportlandia.md'
@@ -223,3 +224,26 @@ print(json_output)
 
 print("\nXML Output:")
 print(xml_output)
+
+# Replace custom serialization/deserialization with JSON-based methods
+def custom_serialize(obj):
+    try:
+        return json.dumps(obj)
+    except TypeError as e:
+        raise ValueError(f"Cannot serialize: {obj}. Error: {e}")
+
+def custom_deserialize(data):
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Cannot deserialize: {data}. Error: {e}")
+
+# Serialize the product summary
+serialized_data = custom_serialize(product_summary)
+print("Serialized Data:")
+print(serialized_data)
+
+# Deserialize the data back to the original structure
+deserialized_data = custom_deserialize(serialized_data)
+print("\nDeserialized Data:")
+print(deserialized_data)
