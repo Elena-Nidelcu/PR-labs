@@ -232,6 +232,16 @@ def custom_serialize(obj):
     except TypeError as e:
         raise ValueError(f"Cannot serialize: {obj}. Error: {e}")
 
+# Custom Pretty Serialization Function
+def pretty_serialize(obj):
+    try:
+        # Create a JSON string with indentation and sorted keys
+        pretty_json = json.dumps(obj, indent=4, sort_keys=True)
+        return pretty_json
+    except TypeError as e:
+        raise ValueError(f"Cannot serialize object for pretty print: {obj}. Error: {e}")
+
+
 def custom_deserialize(data):
     try:
         return json.loads(data)
@@ -241,7 +251,10 @@ def custom_deserialize(data):
 # Serialize the product summary
 serialized_data = custom_serialize(product_summary)
 print("Serialized Data:")
-print(serialized_data)
+# print(serialized_data)
+
+serialized_data2 = pretty_serialize(product_summary)
+print(serialized_data2)
 
 # Deserialize the data back to the original structure
 deserialized_data = custom_deserialize(serialized_data)
