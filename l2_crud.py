@@ -160,6 +160,27 @@ def delete_product():
     return jsonify({'message': 'Product deleted'}), 200
 
 
+# Route to handle file uploads
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    # Check if a file is included in the request
+    if 'file' not in request.files:
+        return jsonify({'message': 'No file part in the request'}), 400
+
+    file = request.files['file']
+
+    # If no file is selected or file is empty
+    if file.filename == '':
+        return jsonify({'message': 'No selected file'}), 400
+
+    # Reading the content of the file (assuming it's a JSON file)
+    file_content = file.read().decode('utf-8')  # Read the file and decode it (assuming text content)
+
+    print(file_content)  # Log the content of the file (for debugging)
+
+    return jsonify({'message': 'File received and content printed'}), 200
+
+
 # Run the server
 if __name__ == '__main__':
     app.run(debug=True)
