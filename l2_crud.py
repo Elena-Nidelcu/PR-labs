@@ -47,29 +47,38 @@ def create_product():
 
 # READ - GET /read
 @app.route('/read', methods=['GET'])
-@app.route('/read', methods=['GET'])
 def read_product():
     product_id = request.args.get('id')  # Fetching the product ID from the request
-
-    if not product_id:
-        return jsonify({'message': 'Product ID is required'}), 400  # Return error if no ID is provided
+    offset = request.args.get('offset', default=0, type=int)  # Default offset = 0
+    limit = request.args.get('limit', default=5, type=int)    # Default limit = 5
 
     cnx = get_db_connection()
     cursor = cnx.cursor(dictionary=True)
 
-    # Fetch product by ID only
-    cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
-    product = cursor.fetchone()
+    # If product_id is provided, fetch that specific product
+    if product_id:
+        cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
+        product = cursor.fetchone()
+
+        cursor.close()
+        cnx.close()
+
+        if product:
+            return jsonify(product), 200
+        else:
+            return jsonify({'message': 'Product not found'}), 404
+
+    # If product_id is not provided, fetch a paginated list of products
+    cursor.execute("SELECT * FROM products LIMIT %s OFFSET %s", (limit, offset))
+    products = cursor.fetchall()
 
     cursor.close()
     cnx.close()
 
-    if product:
-        return jsonify(product), 200
+    if products:
+        return jsonify(products), 200
     else:
-        return jsonify({'message': 'Product not found'}), 404
-
-
+        return jsonify({'message': 'No products found'}), 404
 
 @app.route('/update', methods=['PUT'])
 def update_product():
