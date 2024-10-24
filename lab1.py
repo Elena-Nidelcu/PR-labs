@@ -3,7 +3,6 @@ import ssl
 from bs4 import BeautifulSoup
 from datetime import datetime
 from functools import reduce
-import json
 
 # Define the HTTPS URL and host details
 host = 'sportlandia.md'

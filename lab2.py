@@ -6,12 +6,13 @@ import mysql.connector
 cnx = mysql.connector.connect(
     user='root',
     password='Root123+',
-    host='localhost'
+    host='localhost',
+    database='sportlandia'
 )
 cursor = cnx.cursor()
 
 # Create the database if it doesn't exist
-cursor.execute("CREATE DATABASE IF NOT EXISTS sportlandia")
+# cursor.execute("CREATE DATABASE IF NOT EXISTS sportlandia")
 cursor.execute("USE sportlandia")
 
 # Create the table if it doesn't exist
