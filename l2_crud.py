@@ -178,7 +178,7 @@ def upload_file():
 
     print(file_content)  # Log the content of the file (for debugging)
 
-    return jsonify({'message': 'File received and content printed'}), 200
+    return jsonify({'message': 'File received and content printed', 'content': file_content}), 200
 
 
 # Run the server
