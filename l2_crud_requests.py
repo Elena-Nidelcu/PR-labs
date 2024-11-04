@@ -20,12 +20,12 @@ print(response.json())  # Product data
 
 # 2-2. Read products without ID (test pagination)
 # Fetch the first 5 products (default pagination)
-response = requests.get('http://127.0.0.1:5000/read')
-for i in response.json():
-    print(i)
+# response = requests.get('http://127.0.0.1:5000/read')
+# for i in response.json():
+#     print(i)
 
 # Fetch the next 5 products with offset = 5
-response = requests.get('http://127.0.0.1:5000/read', params={'offset': 5, 'limit': 5})
+response = requests.get('http://127.0.0.1:5000/read', params={'offset': 152, 'limit': 5})
 for i in response.json():
     print(i)
 

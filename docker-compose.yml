@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:latest
+    container_name: mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: Root123+   # Root password for MySQL
+      MYSQL_DATABASE: sportlandia      # Automatically create the database
+    ports:
+      - "3307:3306"                    # Expose MySQL on port 3306 for local access
+    volumes:
+      - db_data:/var/lib/mysql         # Persist data on the host machine
+
+volumes:
+  db_data:
