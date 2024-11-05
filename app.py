@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_socketio import SocketIO, emit
 import mysql.connector
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -8,23 +9,43 @@ socketio = SocketIO(app)
 
 connected_users = []
 
-
 # --- Database Connection ---
 def get_db_connection():
     cnx = mysql.connector.connect(
-        user='root',
-        password='Root123+',
-        host='localhost',
-        database='sportlandia'
+        user=os.getenv('MYSQL_USER', 'root'),
+        password=os.getenv('MYSQL_PASSWORD', 'Root123+'),
+        host=os.getenv('MYSQL_HOST', 'db'),  # Docker service name for the database
+        database=os.getenv('MYSQL_DB', 'sportlandia'),
+        port=3306
     )
     return cnx
 
+# --- Create Table if it Doesn't Exist ---
+def create_products_table():
+    cnx = get_db_connection()
+    cursor = cnx.cursor()
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255),
+        price DECIMAL(10, 2),
+        size INT,
+        color VARCHAR(255),
+        link VARCHAR(255)
+    );
+    """
+    cursor.execute(create_table_query)
+    cnx.commit()
+    cursor.close()
+    cnx.close()
+
+# Call the function to create the table at the start of the application
+create_products_table()
 
 # --- Home Route ---
 @app.route('/')
 def home():
     return 'Welcome to the Product Management and Chat Application'
-
 
 # --- CRUD Operations ---
 # CREATE - POST /create
@@ -48,7 +69,6 @@ def create_product():
     cnx.close()
 
     return jsonify({'message': 'Product created'}), 201
-
 
 # READ - GET /read
 @app.route('/read', methods=['GET'])
@@ -79,7 +99,6 @@ def read_product():
         return jsonify(products), 200
     else:
         return jsonify({'message': 'No products found'}), 404
-
 
 # UPDATE - PUT /update
 @app.route('/update', methods=['PUT'])
@@ -129,7 +148,6 @@ def update_product():
 
     return jsonify({'message': 'Product updated'}), 200
 
-
 # DELETE - DELETE /delete
 @app.route('/delete', methods=['DELETE'])
 def delete_product():
@@ -150,7 +168,6 @@ def delete_product():
 
     return jsonify({'message': 'Product deleted'}), 200
 
-
 # File Upload - POST /upload
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -166,12 +183,10 @@ def upload_file():
 
     return jsonify({'message': 'File received and content printed', 'content': file_content}), 200
 
-
 # --- Chat Room ---
 @app.route('/chat')
 def chat():
     return render_template('chat.html')
-
 
 @socketio.on('join')
 def handle_join(data):
@@ -180,17 +195,14 @@ def handle_join(data):
         connected_users.append(username)
         emit('user_joined', {'username': username}, broadcast=True)
 
-
 @socketio.on('send_message')
 def handle_message(data):
     emit('receive_message', {'username': data['username'], 'message': data['message']}, broadcast=True)
-
 
 @socketio.on('disconnect')
 def handle_disconnect():
     emit('user_left', {'username': 'a user'}, broadcast=True)
 
-
 # --- Run Application ---
 if __name__ == '__main__':
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', debug=True, allow_unsafe_werkzeug=True)
