@@ -37,6 +37,12 @@ for product in products:
     color = color_div.find('span')['data-product-id'] if color_div and color_div.find('span') else "Color not available"
     link = title_div.find('a')['href'] if title_div else "Link not found"
 
+    # Remove ' LEI' and convert to a float
+    try:
+        price = float(price.replace(' LEI', '').replace(',', '.').strip())
+    except ValueError:
+        continue  # Handle invalid price
+
     # Publish to RabbitMQ
     product_data = {
         "name": name,
