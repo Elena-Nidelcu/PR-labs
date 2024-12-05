@@ -38,23 +38,34 @@ def save_to_file(products, filename='processed_products.json'):
 
 # Function to send messages to RabbitMQ
 def send_to_rabbitmq(products):
+    """
+    Sends a list of product dictionaries to RabbitMQ in JSON format.
+    """
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
     channel = connection.channel()
     channel.queue_declare(queue=RABBITMQ_QUEUE)
 
     for product in products:
-        channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=str(product))
-        print(f"Sent to RabbitMQ: {product}")
+        # Serialize the product dictionary to a JSON string
+        product_json = json.dumps(product)
+        channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=product_json)
+        print(f"Sent to RabbitMQ: {product_json}")
 
     connection.close()
 
 def upload_to_ftp(file_path, ftp_host='127.0.0.1', ftp_user='testuser', ftp_password='testpass'):
-    ftp = FTP(ftp_host)
-    ftp.login(user=ftp_user, passwd=ftp_password)
-    with open(file_path, 'rb') as file:
-        ftp.storbinary(f'STOR {file_path.split("/")[-1]}', file)
-    ftp.quit()
-    print(f"Uploaded {file_path} to FTP server.")
+    """
+    Uploads a file to the specified FTP server.
+    """
+    try:
+        ftp = FTP(ftp_host)
+        ftp.login(user=ftp_user, passwd=ftp_password)
+        with open(file_path, 'rb') as file:
+            ftp.storbinary(f'STOR {file_path.split("/")[-1]}', file)
+        ftp.quit()
+        print(f"Uploaded {file_path} to FTP server.")
+    except Exception as e:
+        print(f"Error uploading file to FTP: {e}")
 
 
 # Scraping logic
