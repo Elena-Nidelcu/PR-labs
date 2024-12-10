@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify
 import mysql.connector
+import requests
+import json
+import socket
 
 app = Flask(__name__)
 
@@ -160,7 +163,44 @@ def delete_product():
     return jsonify({'message': 'Product deleted'}), 200
 
 
-# Route to handle file uploads
+LEADER_URL = "http://localhost:5000/leader"
+
+
+# Function to fetch the current leader
+def get_leader():
+    try:
+        response = requests.get(LEADER_URL)
+        if response.status_code == 200:
+            leader_info = response.json()
+            print(f"Current leader is Node {leader_info['leader_id']}.")
+            return leader_info['leader_id']
+        else:
+            print("Failed to fetch leader info.")
+    except Exception as e:
+        print(f"Error fetching leader: {e}")
+    return None
+
+
+# Function to send data to the leader
+def send_to_leader(request_data):
+    leader_id = get_leader()
+    if leader_id is None:
+        print("No leader available. Cannot process request.")
+        return
+
+    # Send request to the leader
+    leader_port = 10000 + leader_id
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        message = {'type': 'DatabaseRequest', 'request_data': request_data}
+        s.sendto(json.dumps(message).encode(), ('localhost', leader_port))
+
+        # Await response from the leader
+        data, _ = s.recvfrom(1024)
+        response = json.loads(data.decode())
+        print(f"Response from leader: {response}")
+
+
+# Endpoint to upload a file and process it
 @app.route('/upload', methods=['POST'])
 def upload_file():
     # Check if a file is included in the request
@@ -176,11 +216,50 @@ def upload_file():
     # Reading the content of the file (assuming it's a JSON file)
     file_content = file.read().decode('utf-8')  # Read the file and decode it (assuming text content)
 
-    print(file_content)  # Log the content of the file (for debugging)
+    print(f"Received file content: {file_content}")  # Log the content of the file (for debugging)
 
-    return jsonify({'message': 'File received and content printed', 'content': file_content}), 200
+    # Assuming the file content is a JSON object, process it
+    try:
+        file_data = json.loads(file_content)
+    except json.JSONDecodeError:
+        return jsonify({'message': 'Invalid JSON file content'}), 400
+
+    # Send the data to the leader for processing
+    send_to_leader(file_data)
+
+    return jsonify({'message': 'File received, processed, and sent to leader'}), 200
+
+
+# Route to handle file uploads
+# @app.route('/upload', methods=['POST'])
+# def upload_file():
+#     # Check if a file is included in the request
+#     if 'file' not in request.files:
+#         return jsonify({'message': 'No file part in the request'}), 400
+#
+#     file = request.files['file']
+#
+#     # If no file is selected or file is empty
+#     if file.filename == '':
+#         return jsonify({'message': 'No selected file'}), 400
+#
+#     # Reading the content of the file (assuming it's a JSON file)
+#     file_content = file.read().decode('utf-8')  # Read the file and decode it (assuming text content)
+#
+#     print(file_content)  # Log the content of the file (for debugging)
+#
+#     return jsonify({'message': 'File received and content printed', 'content': file_content}), 200
+
+# @app.route('/update_leader', methods=['POST'])
+# def update_leader():
+#     data = request.get_json()
+#     leader_id = data.get('leader_id')
+#     if leader_id:
+#         print(f"Manager received leader update: Node {leader_id} is now the leader.")
+#         return jsonify({'message': 'Leader updated', 'leader_id': leader_id}), 200
+#     return jsonify({'message': 'Invalid leader ID'}), 400
 
 
 # Run the server
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)

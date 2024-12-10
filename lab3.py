@@ -9,6 +9,7 @@ ELECTION_TIMEOUT_MIN = 1.5  # seconds
 ELECTION_TIMEOUT_MAX = 3.0  # seconds
 HEARTBEAT_INTERVAL = 1  # seconds
 VOTERS_REQUIRED = 2  # For simplicity, assume 3 nodes total
+CONSUMER_PORT = 6000  # Port to communicate with the consumer
 
 # Logger setup
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
@@ -23,10 +24,12 @@ class RaftNode:
         self.vote_count = 0
         self.election_timeout = random.uniform(ELECTION_TIMEOUT_MIN, ELECTION_TIMEOUT_MAX)
         self.heartbeat_received = False
+        self.is_leader = False
 
     def start(self):
         """Start the node simulation."""
         logging.info(f"Node {self.node_id} started as a Follower.")
+        threading.Thread(target=self.listen_to_consumer_udp).start()  # Only the leader will handle consumer requests
         while True:
             if self.state == 'Follower':
                 self.run_follower()
@@ -55,7 +58,9 @@ class RaftNode:
 
     def run_leader(self):
         """Leader logic: Send heartbeats to followers."""
-        while True:
+        self.is_leader = True
+        logging.info(f"Node {self.node_id} is acting as the Leader.")
+        while self.state == 'Leader':
             self.send_heartbeats()
             time.sleep(HEARTBEAT_INTERVAL)
 
@@ -77,11 +82,6 @@ class RaftNode:
         """Send a vote request to a node."""
         message = f"VoteRequest {self.node_id}"
         self.send_message(node, message)
-
-    def send_vote_response(self, candidate_id):
-        """Send a vote response message to the candidate."""
-        message = f"VoteResponse {self.node_id} {candidate_id}"
-        self.send_message(candidate_id, message)
 
     def send_heartbeats(self):
         """Send heartbeat messages to followers."""
@@ -121,10 +121,9 @@ class RaftNode:
             candidate_id = message.split()[1]
             if self.state == 'Follower' and self.voted_for is None:
                 self.voted_for = candidate_id
-                self.send_vote_response(candidate_id)
+                self.send_message(int(candidate_id), f"VoteResponse {self.node_id}")
 
         elif message.startswith("VoteResponse"):
-            # Handle vote response (e.g., counting votes in Candidate state)
             if self.state == 'Candidate':
                 self.vote_count += 1
 
@@ -140,6 +139,34 @@ class RaftNode:
                 data, _ = sock.recvfrom(1024)
                 message = data.decode()
                 self.handle_message(message)
+
+    def listen_to_consumer_udp(self):
+        """Listen to consumer requests over UDP."""
+        if not self.is_leader:
+            return
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server:
+            server.bind(('localhost', CONSUMER_PORT))
+            logging.info("Leader is ready to handle consumer requests over UDP.")
+            while True:
+                data, addr = server.recvfrom(1024)
+                if data:
+                    request = data.decode()
+                    logging.info(f"Received request from {addr}: {request}")
+                    response = self.handle_consumer_request(request)
+                    server.sendto(response.encode(), addr)
+
+    def handle_consumer_request(self, request):
+        """Handle a consumer request (e.g., mock database operations)."""
+        logging.info(f"Handling consumer request: {request}")
+        if request.startswith("READ"):
+            key = request.split()[1]
+            # Simulate reading from a database
+            return f"Value for key {key}"
+        elif request.startswith("WRITE"):
+            key, value = request.split()[1:3]
+            # Simulate writing to a database
+            return f"Key {key} set to value {value}"
+        return "Unknown command"
 
 # Main function to start multiple nodes
 def start_node(node_id, nodes):
